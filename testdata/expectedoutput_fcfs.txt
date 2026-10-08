@@ -1,0 +1,12 @@
+4 4 2 
+1 7 3 
+3 2 4 
+R0: charged minutes = 4, delivery minutes = 0, time elapsed = 4, departs on delivery
+R1: charged minutes = 1, delivery minutes = 0, time elapsed = 5, departs on delivery
+R2: charged minutes = 3, delivery minutes = 0, time elapsed = 8, departs on delivery
+R0: charged minutes = 6, delivery minutes = 4, time elapsed = 10, shift complete
+R2: charged minutes = 7, delivery minutes = 2, time elapsed = 14, shift complete
+R1: charged minutes = 4, delivery minutes = 7, time elapsed = 17, shift complete
+R0: shift time = 10, queue time = 0
+R2: shift time = 14, queue time = 5
+R1: shift time = 17, queue time = 6
