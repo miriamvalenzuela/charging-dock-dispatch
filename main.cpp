@@ -7,9 +7,12 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <pthread.h>
+#include <sched.h>
 
 #include "shared.h"
 #include "log.h"
+#include "dispatcher.h"
 
 using namespace std;
 
@@ -115,5 +118,19 @@ int main (int argc, char* argv[]) {
 
     printRobotPlans(sharedData.robots);
 
+    pthread_t dispatcher;
+
+    // Starts the worker thread which will run the dispatch simulation
+    if (pthread_create(&dispatcher, nullptr, dispatcherThread, &sharedData) != 0) {
+        cout << "Unable to create dispatcher thread\n";
+        return 0;
+    }
+
+    // Busy wait until the dispatcher indicates that the simulation has finished
+    while (!sharedData.dispatcherDone.load()) {
+        sched_yield();
+    }
+
     return 0;
+
 }
