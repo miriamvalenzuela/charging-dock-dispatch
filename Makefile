@@ -11,7 +11,7 @@ PROGRAM = chargebay
 $(PROGRAM): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $(PROGRAM) $(OBJS)
 
-main.o: main.cpp shared.h log.h
+main.o: main.cpp shared.h dispatcher.h log.h
 	$(CXX) $(CXXFLAGS) -c main.cpp
 
 dispatcher.o: dispatcher.cpp dispatcher.h shared.h log.h

@@ -9,12 +9,33 @@
 #include <sstream>
 #include <pthread.h>
 #include <sched.h>
+#include <cerrno>
+#include <cstdlib>
+#include <limits>
 
 #include "shared.h"
 #include "log.h"
 #include "dispatcher.h"
 
 using namespace std;
+
+// Rejects any non-numeric, partially numeric, non-positive, or oversized values
+bool parsePositiveNumber(const char* text, unsigned int& result) {
+    errno = 0; 
+
+    char* end = nullptr; 
+
+    long value = strtol(text, &end, 10);
+
+    if (errno != 0 || end == text || *end != '\0' || value <= 0 || value > static_cast<long>(numeric_limits<unsigned int>::max())) {
+        return false;
+    }
+
+    result = static_cast<unsigned int>(value);
+
+    return true;
+}
+
 
 bool readRobotPlans(const string& filePath, vector<Robot>& robots) {
     ifstream inputFile(filePath);
@@ -36,21 +57,23 @@ bool readRobotPlans(const string& filePath, vector<Robot>& robots) {
         istringstream lineStream(line);
 
         vector<unsigned int> legs;
-        int duration;
+        string token;
 
         // Reads every leg belonging to the current robot
-        while (lineStream >> duration) {
-            if (duration <= 0) {
-                cout << "A leg duration must be bigger than 0.\n";
-                return false;
-            }
+        while (lineStream >> token) {
+           unsigned int duration;
 
-            legs.push_back(static_cast<unsigned int>(duration));
+           if (!parsePositiveNumber(token.c_str(), duration)) {
+             cout << "A leg duration must be bigger than 0\n";
+             return false;
+           }
+
+            legs.push_back(duration);
         }
 
         // Every valid plan should start and end with a charge leg
         if (legs.size() % 2 == 0) {
-            cout << "There must be an odd number of legs for each robot.\n";
+            cout << "There must be an odd number of legs for each robot\n";
             return false;
         }
 
@@ -78,23 +101,42 @@ int main (int argc, char* argv[]) {
 
     int option; 
 
-    while ((option = getopt(argc, argv, "s:q:")) != -1) {
+    opterr = 0;
+
+    while ((option = getopt(argc, argv, ":s:q:")) != -1) {
         switch (option) {
             case 's': {
                 string strategy = optarg;
 
-                if (strategy == "rr") {
-                    policy = DispatchPolicy::RR;
-                }else {
+                if (strategy == "fcfs") {
                     policy = DispatchPolicy::FCFS;
+                } else if (strategy == "rr") {
+                    policy = DispatchPolicy::RR;
+                } else {
+                    return 0;
                 }
 
                 break;
             }
 
             case 'q':
-                quantum = static_cast<unsigned int>(atoi(optarg));
+                if (!parsePositiveNumber(optarg, quantum)) {
+                    cout << "Charge cap must be a number and bigger than 0\n";
+
+                    return 0;
+                }
+
                 break;
+
+            case ':':
+                if (optopt == 'q') {
+                    cout << "Charge cap must be a number and bigger than 0\n";
+                }
+
+                return 0;
+
+            case '?':
+                return 0;
 
             default:
                 break;
