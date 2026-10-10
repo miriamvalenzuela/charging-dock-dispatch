@@ -76,12 +76,25 @@ void runSimulation(SharedData& sharedData) {
 
         unsigned int serviceMinutes = current->remainingLegMinutes;
 
+        // Round robin is limited to one dock visit to the set charge cap
+        if (sharedData.policy == DispatchPolicy::RR) {
+            serviceMinutes = min(serviceMinutes, sharedData.quantum);
+        }
+
         advanceRoad(serviceMinutes, roadQueue, dockQueue); 
 
         elapsedTime += serviceMinutes; 
 
         current->chargedMinutes += serviceMinutes;
-        current->remainingLegMinutes = 0; 
+        current->remainingLegMinutes -= serviceMinutes;
+
+        if (current->remainingLegMinutes > 0) {
+            log_charge_leg(current->id, current->chargedMinutes, current->deliveryMinutes, elapsedTime, CAP_REACHED);
+
+            dockQueue.push_back(current);
+
+            continue;
+        }
 
         // The final charge leg completes the robot's shift
         if (current->legIndex == current->legs.size() - 1) {
